@@ -6,7 +6,7 @@ Created on Sat Apr 30 14:41:45 2022
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from neurodynex3.hopfield_network import pattern_tools, plot_tools, network
+from neurodynex.hopfield_network import pattern_tools, plot_tools, network
 
 pattern_size = 5
 nr_neurons=300

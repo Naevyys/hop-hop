@@ -105,7 +105,6 @@ def hop_run(net, stored_patterns, hamming_distance, selected_pattern_id=None):
     initial_state = selected_pattern  # Flip 15 randomly chosen neurons TODO\
     initial_state = initial_state * 2 -1
     net.set_state_from_pattern(initial_state)
-    theta = 0
     # Run the network
     n_steps = 6
     net.run(nr_steps=n_steps)
@@ -117,11 +116,10 @@ def hop_run(net, stored_patterns, hamming_distance, selected_pattern_id=None):
 
     return distances, correctly_retrieved, selected_pattern_id
 
-x1,x2,x3 = hop_run(net, random_patterns, hamming_distance, selected_pattern_id=None)
-print(x1)
 
 net , random_patterns = hop_network(N,n_patterns,a,b,theta)
-def ex4(hamming_distance, m_vals, n_runs, N, a, b, theta):
+
+def ex2_5(hamming_distance, m_vals, n_runs, N, a, b, theta):
     """
     Computes for each value of m the mean distance between the final state of the network and the target pattern, and
     plot the results.
@@ -144,7 +142,7 @@ def ex4(hamming_distance, m_vals, n_runs, N, a, b, theta):
     """
     
     def compute_mean_distance(n_patterns):
-        network, random_patterns = generate_and_store_random_patterns(net, n_patterns)
+        network, random_patterns = hop_network(N,n_patterns,a,b,theta)
         distances = np.zeros(n_patterns)
         n_flips = 15  # 5% of 300
         for i, pattern in enumerate(random_patterns):
@@ -167,5 +165,5 @@ def ex4(hamming_distance, m_vals, n_runs, N, a, b, theta):
 
     return means
 
-x4=ex4(hamming_distance, m_vals=(5, 20, 40, 60, 80, 100), n_runs=6, N=300, a=0.5, b=0.5, theta=0)
-print(x4)
+means=ex2_5(hamming_distance, m_vals=(5, 20, 40, 60, 80, 100), n_runs=6, N=300, a=0.5, b=0.5, theta=0)
+print(means)

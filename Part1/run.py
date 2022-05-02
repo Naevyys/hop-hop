@@ -55,7 +55,7 @@ def ex2():
         assert pattern1.shape == pattern2.shape, "Shapes of the patterns do not match!"
 
         N = np.prod(pattern1.shape)
-        return (N - np.dot(pattern1.flatten(), pattern2.flatten())) / 2*N
+        return (N - np.dot(pattern1.flatten(), pattern2.flatten())) / (2*N)
 
     return compute_hamming_distance
 
@@ -93,7 +93,7 @@ def ex3(net, stored_patterns, distance_function, selected_pattern_id=None):
     return distances, correctly_retrieved, selected_pattern_id
 
 
-def ex4(net, distance_function, m_vals=(5, 20, 40, 60, 80, 100), n_runs=6, plot=True):
+def ex4(net, distance_function, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6, tol=0.05, is_ex4=True):
     """
     Computes for each value of m the mean distance between the final state of the network and the target pattern, and
     plot the results if plot == True.
@@ -112,11 +112,12 @@ def ex4(net, distance_function, m_vals=(5, 20, 40, 60, 80, 100), n_runs=6, plot=
     :param distance_function: distance function to use
     :param m_vals: List of different values for m
     :param n_runs: Number of runs to reach the state to compare with the target pattern
-    :param plot: Whether to plot and save the plot or not
-    :return: mean distances
+    :param tol: Percentage of error tolerance for retrieving patterns correctly
+    :param is_ex4: Whether we are running exercise 4 or not (we are reusing ex4 in ex5, but do not need all computations)
+    :return: mean distances, m max if is_ex4, means otherwise
     """
 
-    def compute_mean_distance(n_patterns):
+    def compute_distances(n_patterns):
         network, random_patterns = generate_and_store_random_patterns(net, n_patterns)
         distances = np.zeros(n_patterns)
         n_flips = 15  # 5% of 300
@@ -126,19 +127,34 @@ def ex4(net, distance_function, m_vals=(5, 20, 40, 60, 80, 100), n_runs=6, plot=
             network.run(n_runs)
             final_state = network.state
             distances[i] = distance_function(final_state, np.squeeze(pattern))
-        return np.mean(distances)
+        return distances
 
-    means = np.array([compute_mean_distance(m) for m in m_vals])
+    distances = [compute_distances(m) for m in m_vals]
+    means = np.array([np.mean(distance) for distance in distances])
 
-    if plot:
+    if is_ex4:
+        correctly_retrieved = [distance <= 0.05 for distance in distances]
+        correctly_retrieved_percentage = np.array([np.count_nonzero(item) / len(item) for item in correctly_retrieved])
+
         plt.plot(m_vals, means)
-        plt.title("Ex4: Means distances between final state and target pattern.")
+        plt.title("Ex4: Means distance between final state and target pattern.")
         plt.xlabel("Number of patterns stored in the network")
         plt.ylabel("Error (measured using Hamming distance)")
         plt.savefig("plots/ex4.png")
         plt.show()
 
-    return means
+        plt.plot(m_vals, correctly_retrieved_percentage)
+        plt.title("Ex4: Percentage of correctly retrieved patterns.")
+        plt.xlabel("Number of patterns stored in the network")
+        plt.ylabel("Percentage of correctly retrieved patterns")
+        plt.savefig("plots/ex4_percentage.png")
+        plt.show()
+
+        m_max = np.array(m_vals)[correctly_retrieved_percentage > (1 - tol)][-1]
+        return means, m_max
+
+    else:
+        return means
 
 
 def ex5(net, distance_function, n_trials=8):
@@ -150,13 +166,13 @@ def ex5(net, distance_function, n_trials=8):
     :return: mean of means, std of means
     """
 
-    m_vals = (5, 20, 40, 60, 80, 100)
-    means = np.array([ex4(net, distance_function, m_vals=m_vals, plot=False) for _ in range(n_trials)])
+    m_vals = (5, 20, 30, 40, 60, 80, 100)
+    means = np.stack([ex4(net, distance_function, m_vals=m_vals, isex4=False) for _ in range(n_trials)])
     mean_of_means = np.mean(means, axis=0)
-    std_of_means = np.std(means, axis=0)  # TODO: change if needed according to TA answers
+    std_of_means = np.std(means, axis=0)
 
     plt.errorbar(m_vals, mean_of_means, yerr=std_of_means)
-    plt.title("Ex5: Means distances with errorbars between final state and target pattern.")
+    plt.title("Ex5: Means distance with errorbars between final state and target pattern.")
     plt.xlabel("Number of patterns stored in the network")
     plt.ylabel("Error (measured using Hamming distance)")
     plt.savefig("plots/ex5.png")
@@ -165,16 +181,24 @@ def ex5(net, distance_function, n_trials=8):
     return mean_of_means, std_of_means
 
 
+def ex7():
+    """"""
+
+    # For each network size between 50 and 1000:
+    #   - create a network of this size
+    #   - for 4 different sizes:
+    #       - ...
+    #   - Compute the capacity
+
+    # Note from TA: function of network size
+
+    raise NotImplementedError
+
+
 if __name__ == "__main__":
     net, stored_patterns = ex1()
     compute_hamming_distance = ex2()  # TODO: answer theory question of ex2
     distances, correctly_retrieved, selected_pattern_id = ex3(net, stored_patterns, compute_hamming_distance)
-    means = ex4(net, compute_hamming_distance)  # TODO: answer theory question of ex4
+    means, m_max = ex4(net, compute_hamming_distance)  # TODO: answer theory question of ex4
     mean_of_means, std_of_means = ex5(net, compute_hamming_distance)
-
-
-# Questions for the TAs:
-# - Ex4: "what is the maximum number of patterns that can be retrieved?" What kind of answer is expected from us there?
-#   A theory answer or a computational answer?
-# - Ex5: Which error bars are you expecting? min/max? std? 95% confidence interval?
 

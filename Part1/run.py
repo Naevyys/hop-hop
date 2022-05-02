@@ -14,12 +14,52 @@ def generate_and_store_random_patterns(net, n_patterns):
     :return: updated hopfield network, generated random patterns
     """
 
-    pattern_generator = pattern_tools.PatternFactory(300, pattern_width=1)
+    pattern_generator = pattern_tools.PatternFactory(net.nrOfNeurons, pattern_width=1)
     random_patterns = pattern_generator.create_random_pattern_list(n_patterns)
     net.reset_weights()
     net.store_patterns(random_patterns)
 
     return net, random_patterns
+
+
+def compute_distances(net, n_patterns, n_runs, distance_function, percentage=0.15):
+    """
+    Computes the distance between final state and target pattern for each pattern stored in the network.
+    :param net: Hopfield network
+    :param n_patterns: Number of patterns to store in the network
+    :param n_runs: Number of runs to perform to reach the final state
+    :param distance_function: Function used to compute the distance
+    :param percentage: Percentage of flipped neurons in the initial state
+    :return: Computed distances
+    """
+
+    network, random_patterns = generate_and_store_random_patterns(net, n_patterns)
+    distances = np.zeros(n_patterns)
+    n_flips = int(300*percentage)
+    for i, pattern in enumerate(random_patterns):
+        initial_state = pattern_tools.flip_n(pattern, n_flips)
+        network.set_state_from_pattern(initial_state)
+        network.run(n_runs)
+        final_state = network.state
+        distances[i] = distance_function(final_state, np.squeeze(pattern))
+    return distances
+
+
+def compute_m_max(m_vals, distances, tol_distance=0.05, tol_error_percentage=0.05):
+    """
+    Compute the maximum number of patterns that a network can store to reach an error rate of at most 1 - tol_error_percentage
+    :param m_vals: M values for which the distances were computed
+    :param distances: List of distance lists, the order must match the order of m_vals
+    :param tol_distance: Distance tolerance for considering a pattern as correctly retrieved
+    :param tol_error_percentage: Tolerance for the error rate
+    :return: maximum number of patterns that can be stored, percentages of correctly retrieved patterns
+    """
+
+    correctly_retrieved = [distance <= tol_distance for distance in distances]
+    correctly_retrieved_percentage = np.array([np.count_nonzero(item) / len(item) for item in correctly_retrieved])
+    m_max = np.array(m_vals)[correctly_retrieved_percentage > (1 - tol_error_percentage)][-1]
+
+    return m_max, correctly_retrieved_percentage
 
 
 # ----- Exercises code ----- #
@@ -49,7 +89,7 @@ def ex2():
         Shapes of the patterns must match, otherwise an exception is raised.
         :param pattern1: First pattern
         :param pattern2: Second pattern
-        :return:
+        :return: computed distance
         """
 
         assert pattern1.shape == pattern2.shape, "Shapes of the patterns do not match!"
@@ -93,7 +133,7 @@ def ex3(net, stored_patterns, distance_function, selected_pattern_id=None):
     return distances, correctly_retrieved, selected_pattern_id
 
 
-def ex4(net, distance_function, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6, tol=0.05, is_ex4=True):
+def ex4(net, distance_function, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6, tol_distance=0.05, tol_error=0.05):
     """
     Computes for each value of m the mean distance between the final state of the network and the target pattern, and
     plot the results if plot == True.
@@ -112,64 +152,52 @@ def ex4(net, distance_function, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6, t
     :param distance_function: distance function to use
     :param m_vals: List of different values for m
     :param n_runs: Number of runs to reach the state to compare with the target pattern
-    :param tol: Percentage of error tolerance for retrieving patterns correctly
-    :param is_ex4: Whether we are running exercise 4 or not (we are reusing ex4 in ex5, but do not need all computations)
+    :param tol_distance: Max distance considered as correctly classified.
+    :param tol_error: Percentage of error tolerance for retrieving patterns correctly
     :return: mean distances, m max if is_ex4, means otherwise
     """
 
-    def compute_distances(n_patterns):
-        network, random_patterns = generate_and_store_random_patterns(net, n_patterns)
-        distances = np.zeros(n_patterns)
-        n_flips = 15  # 5% of 300
-        for i, pattern in enumerate(random_patterns):
-            initial_state = pattern_tools.flip_n(pattern, n_flips)
-            network.set_state_from_pattern(initial_state)
-            network.run(n_runs)
-            final_state = network.state
-            distances[i] = distance_function(final_state, np.squeeze(pattern))
-        return distances
-
-    distances = [compute_distances(m) for m in m_vals]
+    distances = [compute_distances(net, m, n_runs, distance_function) for m in m_vals]
     means = np.array([np.mean(distance) for distance in distances])
+    m_max, correctly_retrieved_percentage = compute_m_max(m_vals, distances, tol_distance=tol_distance, tol_error_percentage=tol_error)
 
-    if is_ex4:
-        correctly_retrieved = [distance <= 0.05 for distance in distances]
-        correctly_retrieved_percentage = np.array([np.count_nonzero(item) / len(item) for item in correctly_retrieved])
+    plt.plot(m_vals, means)
+    plt.title("Ex4: Means distance between final state and target pattern.")
+    plt.xlabel("Number of patterns stored in the network")
+    plt.ylabel("Error (measured using Hamming distance)")
+    plt.savefig("plots/ex4.png")
+    plt.show()
 
-        plt.plot(m_vals, means)
-        plt.title("Ex4: Means distance between final state and target pattern.")
-        plt.xlabel("Number of patterns stored in the network")
-        plt.ylabel("Error (measured using Hamming distance)")
-        plt.savefig("plots/ex4.png")
-        plt.show()
+    plt.plot(m_vals, correctly_retrieved_percentage)
+    plt.title("Ex4: Percentage of correctly retrieved patterns.")
+    plt.xlabel("Number of patterns stored in the network")
+    plt.ylabel("Percentage of correctly retrieved patterns")
+    plt.savefig("plots/ex4_percentage.png")
+    plt.show()
 
-        plt.plot(m_vals, correctly_retrieved_percentage)
-        plt.title("Ex4: Percentage of correctly retrieved patterns.")
-        plt.xlabel("Number of patterns stored in the network")
-        plt.ylabel("Percentage of correctly retrieved patterns")
-        plt.savefig("plots/ex4_percentage.png")
-        plt.show()
-
-        m_max = np.array(m_vals)[correctly_retrieved_percentage > (1 - tol)][-1]
-        return means, m_max
-
-    else:
-        return means
+    return means, m_max
 
 
-def ex5(net, distance_function, n_trials=8):
+def ex5(net, distance_function, n_trials=8, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6):
     """
     Repeats experiment of ex4 several times to obtain error bars on the means, and plots the results.
     :param net: hopfield network
     :param distance_function: function used to compute the distance
     :param n_trials: number of times the experiment should be repeated to get the error bars.
+    :param m_vals: List of different values for m
+    :param n_runs: Number of runs to reach the state to compare with the target pattern
     :return: mean of means, std of means
     """
 
-    m_vals = (5, 20, 30, 40, 60, 80, 100)
-    means = np.stack([ex4(net, distance_function, m_vals=m_vals, isex4=False) for _ in range(n_trials)])
-    mean_of_means = np.mean(means, axis=0)
-    std_of_means = np.std(means, axis=0)
+    all_means = []
+    for _ in range(n_trials):
+        distances = [compute_distances(net, m, n_runs, distance_function) for m in m_vals]
+        means = np.array([np.mean(distance) for distance in distances])
+        all_means.append(means)
+
+    all_means = np.stack(all_means)
+    mean_of_means = np.mean(all_means, axis=0)
+    std_of_means = np.std(all_means, axis=0)
 
     plt.errorbar(m_vals, mean_of_means, yerr=std_of_means)
     plt.title("Ex5: Means distance with errorbars between final state and target pattern.")
@@ -181,14 +209,19 @@ def ex5(net, distance_function, n_trials=8):
     return mean_of_means, std_of_means
 
 
-def ex7():
+def ex7(net_sizes=(50, 250, 500, 750, 1000), n_patterns_list=()):
     """"""
+
+    for size in net_sizes:
+        net = network.HopfieldNetwork(size)
+
+        #net, random_patterns = generate_and_store_random_patterns(net, n_patterns)
 
     # For each network size between 50 and 1000:
     #   - create a network of this size
-    #   - for 4 different sizes:
-    #       - ...
-    #   - Compute the capacity
+    #   - Use 4 different dictionary sizes
+    #   - Compute m_max and the capacity of the network using this information
+    #   - see instructions for second half
 
     # Note from TA: function of network size
 
@@ -200,5 +233,6 @@ if __name__ == "__main__":
     compute_hamming_distance = ex2()  # TODO: answer theory question of ex2
     distances, correctly_retrieved, selected_pattern_id = ex3(net, stored_patterns, compute_hamming_distance)
     means, m_max = ex4(net, compute_hamming_distance)  # TODO: answer theory question of ex4
+    print(means, m_max)
     mean_of_means, std_of_means = ex5(net, compute_hamming_distance)
-
+    print(mean_of_means, std_of_means)

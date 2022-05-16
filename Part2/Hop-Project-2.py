@@ -32,9 +32,6 @@ def hamming_distance(x,y):
 
 def map_function(theta_0):
     def map_function_theta(sigma_t0, w):
-#        sigma_t1=np.zeros(N)
-#        for i in range(N):
-#            sigma_t1[i]=0.5 * (1 + np.sign(np.dot(w[i],sigma_t0) - np.sum(w[i])/2))
         sigma_t1=[0.5 * (1 + np.sign(np.dot(wi,sigma_t0) - theta_0)) for wi in w]
         return sigma_t1
     return map_function_theta
@@ -72,6 +69,29 @@ def pattern_mean_error(hamming_distance, m_vals, n_runs, flip_rate, N,
         means[i]=mean_error
     return means
 
+def retrievness(hamming_distance, m_vals, n_runs, flip_rate, N, 
+                       a, b, opt_theta, theta_0 ):
+    n_flips = int(flip_rate*N)
+    no_patterns=len(m_vals)
+    means=np.zeros(no_patterns)
+    no_retrieved=np.zeros(no_patterns)
+    for i in range(no_patterns):
+        theta = (1-opt_theta)*theta_0
+        net, random_patterns = hop_network(N,m_vals[i],a,b,theta)
+        mean_error=0
+        correctly_retrieved=0
+        for pattern in random_patterns:
+            new_pattern=pattern*2-1
+            initial_state = pattern_tools.flip_n(new_pattern, n_flips)
+            initial_state=(initial_state + 1)/2
+            net.set_state_from_pattern(initial_state)
+            net.run(n_runs)
+            correctly_retrieved+=(hamming_distance(net.state,pattern)<0.05)
+        no_retrieved[i] = sum(correctly_retrieved)/m_vals[i]
+    Capacity=int(np.interp(0.5, np.flip(no_retrieved), np.flip(m_vals)))
+    return Capacity
+
+
 
 N = 300
 a = 0.5
@@ -97,17 +117,35 @@ def ex2_5():
     plt.show()
     print(np.interp(0.05, mean_error, m_vals))
 
+#x,y=retrievness(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+#                              a=a, b=b, opt_theta=1, theta_0=theta)
+
+def ex2_5_2():
+    theta_list=np.linspace(-5, 5, num = 10)
+    capacity=np.zeros(len(theta_list))
+    
+
+    for i, theta in enumerate(theta_list):
+        capacity[i]=retrievness(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+                                      a=a, b=b, opt_theta=1, theta_0=theta)/N
+
+        
+    plt.plot(theta_list, capacity)
+    plt.title("Ex2-6: Capacity of the netwrok for different values of theta.")
+    plt.xlabel("theta")
+    plt.ylabel("Maximum capacity")
+    plt.savefig("plots/ex2-6.png")
+    plt.show()
 
 def ex2_6():
-    theta_list=np.linspace(-0.7, 0.7, num = 18)
+    theta_list=np.linspace(-0.7, 0.7, num = 10)
     capacity=np.zeros(len(theta_list))
     mean_error=0
     
 
     for i, theta in enumerate(theta_list):
-        mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
-                                      a=a, b=b, opt_theta=0, theta_0=theta)
-        capacity[i] = np.interp(0.05, mean_error, m_vals)/N
+        capacity[i]=retrievness(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+                                      a=a, b=b, opt_theta=0, theta_0=theta)/N
 
         
     plt.plot(theta_list, capacity)
@@ -127,9 +165,8 @@ def ex2_7():
     
     
     for i, theta in enumerate(theta_list):
-        mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
-                                      a=a, b=b, opt_theta=0, theta_0=theta)
-        capacity[i] = np.interp(0.05, mean_error, m_vals)/N
+        capacity[i]=retrievness(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+                                      a=a, b=b, opt_theta=0, theta_0=theta)/N
         
     plt.plot(theta_list, capacity)
     plt.title("Ex2-7: Capacity of the netwrok for different values of theta for a=b=0.1.")
@@ -148,9 +185,8 @@ def ex2_7_2():
     
     
     for i, theta in enumerate(theta_list):
-        mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
-                                      a=a, b=b, opt_theta=0, theta_0=theta)
-        capacity[i] = np.interp(0.05, mean_error, m_vals)/N
+        capacity[i]=retrievness(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+                                      a=a, b=b, opt_theta=0, theta_0=theta)/N
     
     plt.plot(theta_list, capacity)
     plt.title("Ex2-7: Capacity of the netwrok for different values of theta for a=b=0.05.")
@@ -168,9 +204,8 @@ def ex2_8():
     
     for j, b in enumerate(b_list):
         for i, theta in enumerate(theta_list):
-            mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
-                                          a=a, b=b, opt_theta=0, theta_0=theta)
-            capacity[j,i] = np.interp(0.05, mean_error, m_vals)/N
+            capacity[j,i] = retrievness(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+                                          a=a, b=b, opt_theta=0, theta_0=theta)/N
     
     plt.figure('Figure 2.8')
     for j, b in enumerate(b_list):
@@ -186,8 +221,9 @@ def ex2_8():
 
 
 #ex2_5()
-#ex2_6()
-#ex2_7()
-#ex2_7_2()
-#ex2_8()
+#ex2_5_2()
+ex2_6()
+ex2_7()
+ex2_7_2()
+ex2_8()
 

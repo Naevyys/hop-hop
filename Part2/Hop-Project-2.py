@@ -21,6 +21,8 @@ def weight_matrix(n_patterns, N, a, b, patterns):
     cprime=1 / a / (1-a) / N
     for i in range(n_patterns):
         w=w+np.dot(patterns[i]-b, np.transpose(patterns[i]-a))*cprime
+    for i in range(N):
+        w[i,i]=0
     return w
 
 
@@ -57,7 +59,7 @@ def pattern_mean_error(hamming_distance, m_vals, n_runs, flip_rate, N,
     no_patterns=len(m_vals)
     means=np.zeros(no_patterns)
     for i in range(no_patterns):
-        theta = m_vals[i]/(N*2)*opt_theta + (1-opt_theta)*theta_0
+        theta = (1-opt_theta)*theta_0
         net, random_patterns = hop_network(N,m_vals[i],a,b,theta)
         mean_error=0
         for pattern in random_patterns:
@@ -82,13 +84,13 @@ flip_rate = 0.05
 
 def ex2_5():
     mean_error = 0
-    number_runs = 5
+    number_runs = 3
     for i in range(number_runs):
-        mean_error+=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+        mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
                                        a=a, b=b, opt_theta=1, theta_0=theta)/number_runs
     print(mean_error)
     plt.plot(m_vals, mean_error)
-    plt.title("Ex2-5: Means distances between final state and target pattern.")
+    plt.title("Ex2-5: Means distances between the final state and the target pattern.")
     plt.xlabel("Number of patterns stored in the network")
     plt.ylabel("Error (measured using Hamming distance)")
     plt.savefig("plots/ex2-5.png")
@@ -97,13 +99,16 @@ def ex2_5():
 
 
 def ex2_6():
-    theta_list=np.linspace(0.04, 0.08, num = 10)
+    theta_list=np.linspace(-0.7, 0.7, num = 18)
     capacity=np.zeros(len(theta_list))
+    mean_error=0
     
+
     for i, theta in enumerate(theta_list):
         mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
                                       a=a, b=b, opt_theta=0, theta_0=theta)
-        capacity[i] = np.interp(0.05, mean_error, m_vals)
+        capacity[i] = np.interp(0.05, mean_error, m_vals)/N
+
         
     plt.plot(theta_list, capacity)
     plt.title("Ex2-6: Capacity of the netwrok for different values of theta.")
@@ -116,13 +121,15 @@ def ex2_6():
 def ex2_7():
     a = 0.1
     b = 0.1
-    theta_list=np.linspace(0.01, 0.5, num=20)
+    theta_list=np.linspace(0.3, 1, num = 10)
     capacity=np.zeros(len(theta_list))
+    mean_error=0
+    
     
     for i, theta in enumerate(theta_list):
         mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
                                       a=a, b=b, opt_theta=0, theta_0=theta)
-        capacity[i] = np.interp(0.05, mean_error, m_vals)
+        capacity[i] = np.interp(0.05, mean_error, m_vals)/N
         
     plt.plot(theta_list, capacity)
     plt.title("Ex2-7: Capacity of the netwrok for different values of theta for a=b=0.1.")
@@ -133,18 +140,20 @@ def ex2_7():
 
 
 def ex2_7_2():
-    a = 0.2
-    b = 0.2
-    theta_list=np.linspace(0.01, 0.5, num=20)
+    a = 0.05
+    b = 0.05
+    theta_list=np.linspace(0.3, 1, num = 10)
     capacity=np.zeros(len(theta_list))
+    mean_error=0
+    
     
     for i, theta in enumerate(theta_list):
         mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
                                       a=a, b=b, opt_theta=0, theta_0=theta)
-        capacity[i] = np.interp(0.05, mean_error, m_vals)
+        capacity[i] = np.interp(0.05, mean_error, m_vals)/N
     
     plt.plot(theta_list, capacity)
-    plt.title("Ex2-7: Capacity of the netwrok for different values of theta for a=b=0.2.")
+    plt.title("Ex2-7: Capacity of the netwrok for different values of theta for a=b=0.05.")
     plt.xlabel("theta")
     plt.ylabel("Maximum capacity")
     plt.savefig("plots/ex2-7-2.png")
@@ -153,15 +162,15 @@ def ex2_7_2():
 
 def ex2_8():
     a = 0.1
-    b_list = np.linspace(0.1, 0.9, num=5)
-    theta_list=np.linspace(0.04, 0.08, num=5)
-    capacity=np.zeros([len(theta_list),len(b_list)])
+    b_list = np.linspace(0.1, 0.6, num=4)
+    theta_list=np.linspace(-0.7, 0.7, num=15)
+    capacity=np.zeros([len(b_list),len(theta_list)])
     
     for j, b in enumerate(b_list):
         for i, theta in enumerate(theta_list):
             mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
                                           a=a, b=b, opt_theta=0, theta_0=theta)
-            capacity[j,i] = np.interp(0.05, mean_error, m_vals)
+            capacity[j,i] = np.interp(0.05, mean_error, m_vals)/N
     
     plt.figure('Figure 2.8')
     for j, b in enumerate(b_list):
@@ -176,10 +185,9 @@ def ex2_8():
 
 
 
-ex2_5()
-ex2_6()
-ex2_7()
-ex2_7_2()
-ex2_8()
-
+#ex2_5()
+#ex2_6()
+#ex2_7()
+#ex2_7_2()
+#ex2_8()
 

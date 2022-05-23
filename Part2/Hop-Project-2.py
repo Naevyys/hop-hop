@@ -98,7 +98,7 @@ def ex2_5():
     plt.show()
 
 def ex2_6():
-    theta_list=np.linspace(-2, 2, num = 20)
+    theta_list=np.linspace(-2, 2, num = 10)
     capacity=np.zeros(len(theta_list))
     
 
@@ -137,7 +137,7 @@ def ex2_7():
 def ex2_7_2():
     a = 0.05
     b = 0.05
-    theta_list=np.linspace(0.3, 1, num = 15)
+    theta_list=np.linspace(0.3, 1, num = 10)
     capacity=np.zeros(len(theta_list))
     
     

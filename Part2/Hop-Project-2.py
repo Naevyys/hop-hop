@@ -155,7 +155,7 @@ def ex2_7_2():
 
 def ex2_8():
     a = 0.1
-    b_list = np.linspace(0.05, 0.15, num=4)
+    b_list = np.linspace(0.05, 0.2, num=4)
     theta_list=np.linspace(-0.7, 0.7, num=15)
     capacity=np.zeros([len(b_list),len(theta_list)])
     

@@ -32,19 +32,10 @@ def hamming_distance(x,y):
 
 def map_function(theta_0):
     def map_function_theta(sigma_t0, w):
-        sigma_t1=sigma_t0
-        for i in range(len(w)):
-            sigma_t1[i]=0.5 * (1 + np.sign(np.dot(w[i],sigma_t0) - theta_0))
+        sigma_t1=[0.5 * (1 + np.sign(np.dot(wi,sigma_t0) - theta_0)) for wi in w]
         return sigma_t1
     return map_function_theta
 
-def map_function_2(theta_0):
-    def map_function_theta(sigma_t0, w):
-        sigma_t1=sigma_t0
-        for i in range(len(w)):
-            sigma_t1[i]=np.sign(np.dot(w[i],(sigma_t0+1)/2) - theta_0)
-        return sigma_t1
-    return map_function_theta
 
 
 def hop_network(N,n_patterns,a,b,theta_0):
@@ -55,29 +46,12 @@ def hop_network(N,n_patterns,a,b,theta_0):
     new_weights = weight_matrix(n_patterns, N, a, b, random_patterns)
     net = network.HopfieldNetwork(N)
     net.set_dynamics_to_user_function(map_function(theta_0))
+    net.set_dynamics_sign_async()
     #Changing the weights of the network
     net.weights=new_weights
     return net, random_patterns
 
 
-def pattern_mean_error(hamming_distance, m_vals, n_runs, flip_rate, N, 
-                       a, b, opt_theta, theta_0 ):
-    n_flips = int(flip_rate*N)
-    no_patterns=len(m_vals)
-    means=np.zeros(no_patterns)
-    for i in range(no_patterns):
-        theta = (1-opt_theta)*theta_0
-        net, random_patterns = hop_network(N,m_vals[i],a,b,theta)
-        mean_error=0
-        for pattern in random_patterns:
-            new_pattern=pattern*2-1
-            initial_state = pattern_tools.flip_n(new_pattern, n_flips)
-            initial_state=(initial_state + 1)/2
-            net.set_state_from_pattern(initial_state)
-            net.run(n_runs)
-            mean_error+=(hamming_distance(net.state,pattern)/m_vals[i])
-        means[i]=mean_error
-    return means
 
 def Capacity(hamming_distance, m_vals, n_runs, flip_rate, N, 
                        a, b, opt_theta, theta_0 ):
@@ -105,7 +79,7 @@ a = 0.5
 b = 0.5
 theta = 0
 n_runs = 6
-m_vals = (5, 10, 20, 30, 40, 60, 100)
+m_vals = (5, 30, 40, 50, 60, 80, 100)
 flip_rate = 0.05
 
 
@@ -124,7 +98,7 @@ def ex2_5():
     plt.show()
 
 def ex2_6():
-    theta_list=np.linspace(-0.7, 0.7, num = 10)
+    theta_list=np.linspace(-2, 2, num = 20)
     capacity=np.zeros(len(theta_list))
     
 
@@ -144,7 +118,7 @@ def ex2_6():
 def ex2_7():
     a = 0.1
     b = 0.1
-    theta_list=np.linspace(0.3, 1, num = 10)
+    theta_list=np.linspace(0.3, 1, num = 15)
     capacity=np.zeros(len(theta_list))
     
     
@@ -163,7 +137,7 @@ def ex2_7():
 def ex2_7_2():
     a = 0.05
     b = 0.05
-    theta_list=np.linspace(0.3, 1, num = 10)
+    theta_list=np.linspace(0.3, 1, num = 15)
     capacity=np.zeros(len(theta_list))
     
     
@@ -181,7 +155,7 @@ def ex2_7_2():
 
 def ex2_8():
     a = 0.1
-    b_list = np.linspace(0.1, 0.6, num=4)
+    b_list = np.linspace(0.05, 0.15, num=4)
     theta_list=np.linspace(-0.7, 0.7, num=15)
     capacity=np.zeros([len(b_list),len(theta_list)])
     
@@ -202,20 +176,6 @@ def ex2_8():
     plt.show()
 
 
-def ex2_5_2():
-    mean_error = 0
-    number_runs = 3
-    for i in range(number_runs):
-        mean_error=pattern_mean_error(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
-                                       a=a, b=b, opt_theta=1, theta_0=theta)/number_runs
-    print(mean_error)
-    plt.plot(m_vals, mean_error)
-    plt.title("Ex2-5: Means distances between the final state and the target pattern.")
-    plt.xlabel("Number of patterns stored in the network")
-    plt.ylabel("Error (measured using Hamming distance)")
-    plt.savefig("plots/ex2-5.png")
-    plt.show()
-    print(np.interp(0.05, mean_error, m_vals))
 
 #ex2_5()
 #ex2_6()

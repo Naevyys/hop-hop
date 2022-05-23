@@ -35,7 +35,7 @@ def compute_distances(net, n_patterns, n_runs, distance_function, percentage=0.1
 
     network, random_patterns = generate_and_store_random_patterns(net, n_patterns)
     distances = np.zeros(n_patterns)
-    n_flips = int(300*percentage)
+    n_flips = int(network.nrOfNeurons*percentage)
     for i, pattern in enumerate(random_patterns):
         initial_state = pattern_tools.flip_n(pattern, n_flips)
         network.set_state_from_pattern(initial_state)
@@ -59,7 +59,7 @@ def compute_m_max(m_vals, distances, tol_distance=0.05, tol_error_percentage=0.0
     correctly_retrieved_percentage = np.array([np.count_nonzero(item) / len(item) for item in correctly_retrieved])
     m_max = np.array(m_vals)[correctly_retrieved_percentage > (1 - tol_error_percentage)][-1]
 
-    return m_max, correctly_retrieved_percentage
+    return m_max, correctly_retrieved_percentage*100
 
 
 # ----- Exercises code ----- #
@@ -175,7 +175,7 @@ def ex4(net, distance_function, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6, t
     plt.savefig("plots/ex4_percentage.png")
     plt.show()
 
-    return means, m_max
+    return means, m_max, m_vals
 
 
 def ex5(net, distance_function, n_trials=8, m_vals=(5, 20, 30, 40, 60, 80, 100), n_runs=6):
@@ -209,30 +209,56 @@ def ex5(net, distance_function, n_trials=8, m_vals=(5, 20, 30, 40, 60, 80, 100),
     return mean_of_means, std_of_means
 
 
-def ex7(net_sizes=(50, 250, 500, 750, 1000), n_patterns_list=()):
+def ex7(distance_function, net_sizes=(50, 250, 500, 750, 1000), n_runs=6, tol_distance=0.05, tol_error=0.05):
     """"""
 
-    for size in net_sizes:
-        net = network.HopfieldNetwork(size)
+    capacity = np.zeros(len(net_sizes))
 
-        #net, random_patterns = generate_and_store_random_patterns(net, n_patterns)
+    for i, net_size in enumerate(net_sizes):
+        net = network.HopfieldNetwork(net_size)
+        m_vals = (int(net_size*0.05), int(net_size*0.1), int(net_size*0.2), int(net_size*0.3))  # We take 5, 10, 20 and 30% of the network size
 
-    # For each network size between 50 and 1000:
-    #   - create a network of this size
-    #   - Use 4 different dictionary sizes
-    #   - Compute m_max and the capacity of the network using this information
-    #   - see instructions for second half
+        distances = [compute_distances(net, m, n_runs, distance_function, percentage=0) for m in m_vals]  # We take the target pattern as original pattern
+        m_max, percentage_correctly_retrieved = compute_m_max(m_vals, distances, tol_distance=tol_distance, tol_error_percentage=tol_error)
+        capacity[i] = m_max / net_size
 
-    # Note from TA: function of network size
+        plt.plot(m_vals, percentage_correctly_retrieved)
+        plt.title("Ex7: % of retrieved patterns for net size {} starting from pattern".format(net_size))
+        plt.xlabel("Number of patterns stored")
+        plt.ylabel("Percentage of correctly retrieved patterns")
+        plt.savefig("plots/ex7_percentage_net_size_{}.png".format(net_size))
+        plt.show()
 
-    raise NotImplementedError
+    plt.plot(net_sizes, capacity)
+    plt.title("Ex7: Capacity of the network by network size")
+    plt.xlabel("Size of the network")
+    plt.ylabel("Capacity")
+    plt.savefig("plots/ex7.png")
+    plt.show()
+
+    return capacity
 
 
 if __name__ == "__main__":
+    # TODO: Format and print results nicely for when they run the code
+    # Exercise 1
     net, stored_patterns = ex1()
-    compute_hamming_distance = ex2()  # TODO: answer theory question of ex2
+    # Exercise 2
+    compute_hamming_distance = ex2()
+    # Exercise 3
     distances, correctly_retrieved, selected_pattern_id = ex3(net, stored_patterns, compute_hamming_distance)
-    means, m_max = ex4(net, compute_hamming_distance)  # TODO: answer theory question of ex4
-    print(means, m_max)
-    mean_of_means, std_of_means = ex5(net, compute_hamming_distance)
-    print(mean_of_means, std_of_means)
+    print("Exercise 3 results:")
+    print(f"We selected pattern number {selected_pattern_id} for our experiments")
+    print(f"Distances between final state of the network and each pattern: {distances}")
+    print(f"The network retrieved the selected pattern correctly: {correctly_retrieved}")
+    # Exercise 4
+    means, m_max, m_vals = ex4(net, compute_hamming_distance)
+    print("Exercise 4 results:")
+    print(f"Dictionary sizes: {m_vals}")
+    print(f"Mean error of pattern retrieval: {means}")
+    print(f"Maximum number of patterns that can be retrieved: {m_max}")
+    # Exercise 5
+    mean_of_means, std_of_means = ex5(net, compute_hamming_distance)  # This takes a while to run
+    # Exercise 6 - all in the report
+    # Exercise 7
+    capacity = ex7(compute_hamming_distance)  # This takes an even longer while to run

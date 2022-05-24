@@ -45,8 +45,8 @@ def hop_network(N,n_patterns,a,b,theta_0):
     #Creating the new weights from the random patterns
     new_weights = weight_matrix(n_patterns, N, a, b, random_patterns)
     net = network.HopfieldNetwork(N)
-    net.set_dynamics_to_user_function(map_function(theta_0))
     net.set_dynamics_sign_async()
+    net.set_dynamics_to_user_function(map_function(theta_0))
     #Changing the weights of the network
     net.weights=new_weights
     return net, random_patterns
@@ -59,15 +59,22 @@ def Capacity(hamming_distance, m_vals, n_runs, flip_rate, N,
     no_patterns=len(m_vals)
     no_retrieved=np.zeros(no_patterns)
     for i in range(no_patterns):
+        #If opt_theta=1, theta would be equal to 0.
+        #Otherwise the value of theta would be assigned by the inputs
         theta = (1-opt_theta)*theta_0
+        #Creating the network and patterns of 1 & 0
         net, random_patterns = hop_network(N,m_vals[i],a,b,theta)
         correctly_retrieved=0
         for pattern in random_patterns:
+            #Creating an initial state of 1 & 0 with 15 flipped bits
             initial_state = pattern_tools.flip_n(pattern*2-1, n_flips)
             initial_state=(initial_state + 1)/2
+            #Running the network
             net.set_state_from_pattern(initial_state)
             net.run(n_runs)
+            #Measuring the distance between the final state and the pattern
             correctly_retrieved+=(hamming_distance(net.state,pattern)<0.05)
+        #Calculating the percentage of the retrieved patterns.
         no_retrieved[i] = sum(correctly_retrieved)/m_vals[i]
     Capacity=int(np.interp(0.95, np.flip(no_retrieved), np.flip(m_vals)))
     return Capacity, no_retrieved
@@ -79,7 +86,7 @@ a = 0.5
 b = 0.5
 theta = 0
 n_runs = 6
-m_vals = (5, 30, 40, 50, 60, 80, 100)
+m_vals = (5, 20, 30, 40, 50, 60, 80, 100)
 flip_rate = 0.05
 
 
@@ -98,9 +105,8 @@ def ex2_5():
     plt.show()
 
 def ex2_6():
-    theta_list=np.linspace(-2, 2, num = 10)
+    theta_list=np.linspace(0.1, 0.9, num = 14)
     capacity=np.zeros(len(theta_list))
-    
 
     for i, theta in enumerate(theta_list):
         capacity[i]=Capacity(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
@@ -118,9 +124,8 @@ def ex2_6():
 def ex2_7():
     a = 0.1
     b = 0.1
-    theta_list=np.linspace(0.3, 1, num = 15)
+    theta_list=np.linspace(0.1, 0.9, num = 14)
     capacity=np.zeros(len(theta_list))
-    
     
     for i, theta in enumerate(theta_list):
         capacity[i]=Capacity(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
@@ -137,9 +142,8 @@ def ex2_7():
 def ex2_7_2():
     a = 0.05
     b = 0.05
-    theta_list=np.linspace(0.3, 1, num = 10)
+    theta_list=np.linspace(0.1, 0.9, num = 14)
     capacity=np.zeros(len(theta_list))
-    
     
     for i, theta in enumerate(theta_list):
         capacity[i]=Capacity(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
@@ -156,7 +160,7 @@ def ex2_7_2():
 def ex2_8():
     a = 0.1
     b_list = np.linspace(0.05, 0.2, num=4)
-    theta_list=np.linspace(-0.7, 0.7, num=15)
+    theta_list=np.linspace(0, 0.7, num=15)
     capacity=np.zeros([len(b_list),len(theta_list)])
     
     for j, b in enumerate(b_list):
@@ -182,5 +186,3 @@ def ex2_8():
 #ex2_7()
 #ex2_7_2()
 #ex2_8()
-
-#ex2_5_2()

@@ -18,15 +18,15 @@ def generate_weight_matrix(patterns, a, K, n_exc, n_inh):
 
     for pattern in patterns:
         # Set weights exc -> exc
-        weights[:n_exc, :n_exc] += (1/n_exc) * np.dot(pattern[:n_exc], pattern[:n_exc].T)
+        weights[:n_exc, :n_exc] += (1/n_exc) * np.outer(pattern[:n_exc], pattern[:n_exc])
         # Set weights exc -> inh
         weights[n_exc:, :n_exc] += (a/n_inh) * pattern[n_exc:]
     # Set weights inh -> exc
     for i in range(n_inh):
         tmp = np.zeros(n_exc)
-        random_exc_neurons = np.random.choice(np.arange(K), size=K)
+        random_exc_neurons = np.random.choice(np.arange(n_exc), size=K)
         tmp[random_exc_neurons] = 1/K
-        weights[:n_exc, n_exc+n_inh-1] = tmp
+        weights[:n_exc, n_exc+i] = tmp
     # Weights inh -> inh are all 0 anyway, nothing to change there
 
     np.fill_diagonal(weights, 0)
@@ -159,5 +159,5 @@ def ex4(n_steps, n_trials):
 
 if __name__ == "__main__":
     print("Exercise 4 (and 3) results:")
-    mean_capacity = ex4(6, 6)
+    mean_capacity = ex4(20, 6)
     print("Capacity of the network for sparseness a = 0.1:", mean_capacity)

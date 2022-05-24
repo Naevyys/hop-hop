@@ -190,20 +190,33 @@ def ex5(net, distance_function, n_trials=8, m_vals=(5, 20, 30, 40, 60, 80, 100),
     """
 
     all_means = []
+    all_percentages = []
     for _ in range(n_trials):
         distances = [compute_distances(net, m, n_runs, distance_function) for m in m_vals]
         means = np.array([np.mean(distance) for distance in distances])
         all_means.append(means)
+        _, correctly_retrieved_percentage = compute_m_max(m_vals, distances)
+        all_percentages.append(correctly_retrieved_percentage)
 
     all_means = np.stack(all_means)
     mean_of_means = np.mean(all_means, axis=0)
     std_of_means = np.std(all_means, axis=0)
 
+    mean_of_percentages = np.mean(all_percentages, axis=0)
+    std_of_percentages = np.std(all_percentages, axis=0)
+
     plt.errorbar(m_vals, mean_of_means, yerr=std_of_means)
-    plt.title("Ex5: Means distance with errorbars between final state and target pattern.")
+    plt.title("Ex5: Means of distances with errorbars between final state and target pattern.")
     plt.xlabel("Number of patterns stored in the network")
     plt.ylabel("Error (measured using Hamming distance)")
     plt.savefig("plots/ex5.png")
+    plt.show()
+
+    plt.errorbar(m_vals, mean_of_percentages, yerr=std_of_percentages)
+    plt.title("Ex5: Means of percentage of correctly retrieved patterns with errorbars.")
+    plt.xlabel("Number of patterns stored in the network")
+    plt.ylabel("Percentage of correctly retrieved patterns")
+    plt.savefig("plots/ex5_percentage.png")
     plt.show()
 
     return mean_of_means, std_of_means

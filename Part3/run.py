@@ -158,5 +158,5 @@ def ex4(n_steps, n_trials):
 
 if __name__ == "__main__":
     print("Exercise 4 (and 3) results:")
-    mean_capacity = ex4(20, 6)
-    print("Capacity of the network for sparseness a = 0.1:", mean_capacity)
+    mean_capacity = ex4(6, 6)
+    print("Mean m_max value of the network for sparseness a = 0.1:", mean_capacity)

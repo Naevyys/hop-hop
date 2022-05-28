@@ -8,7 +8,10 @@ Created on Sat Apr 30 15:28:22 2022
 import matplotlib.pyplot as plt
 import numpy as np
 from neurodynex.hopfield_network import pattern_tools, network
-
+import os
+os.chdir("..")
+from Part3.run import ex4
+os.chdir("Part2")
 
 
 def random_pattern_generator(N, a, n_patterns):
@@ -74,9 +77,10 @@ def Capacity(hamming_distance, m_vals, n_runs, flip_rate, N,
             net.run(n_runs)
             #Measuring the distance between the final state and the pattern
             correctly_retrieved+=(hamming_distance(net.state,pattern)<0.05)
+#            print(hamming_distance(net.state,pattern))
         #Calculating the percentage of the retrieved patterns.
         no_retrieved[i] = sum(correctly_retrieved)/m_vals[i]
-    Capacity=int(np.interp(0.95, np.flip(no_retrieved), np.flip(m_vals)))
+    Capacity=(np.interp(0.95, np.flip(no_retrieved), np.flip(m_vals)))
     return Capacity, no_retrieved
 
 
@@ -180,9 +184,27 @@ def ex2_8():
     plt.show()
 
 
+def ex3_5():
+    a=0.1
+    b=0
+    theta=0
+    m_vals = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+    capacity=Capacity(hamming_distance, m_vals=m_vals, n_runs=n_runs, N=N, flip_rate=flip_rate, 
+                                      a=a, b=b, opt_theta=1, theta_0=theta)[1]*100
+    m_vals_2, capacity_2 = ex4(n_steps=6, n_trials=10, ex_number="5_comparison_networks", return_mean_percentages=True)
+    plt.plot(m_vals, capacity)
+    plt.plot(m_vals_2, capacity_2)
+    plt.title("Ex3-5: Comparision of the Networks in Ex2 ands in Ex3.")
+    plt.xlabel("Dictionary size")
+    plt.ylabel("Percentage of the correctly retrieved patterns")
+    plt.savefig("plots/ex3-5.png")
+    
+    plt.show()
+
 
 #ex2_5()
 #ex2_6()
 #ex2_7()
 #ex2_7_2()
 #ex2_8()
+

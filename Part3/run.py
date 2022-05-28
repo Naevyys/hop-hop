@@ -200,6 +200,6 @@ def ex5(n_steps, n_runs):
 
 if __name__ == "__main__":
     print("Exercise 4 (and 3) results:")
-    mean_capacity = ex4(6, 6)
-    print("Mean m_max value of the network for sparseness a = 0.1:", mean_capacity)
-    ex5(15, 15)
+    #mean_capacity = ex4(10, 15)
+    #print("Mean m_max value of the network for sparseness a = 0.1:", mean_capacity)
+    #ex5(15, 15)

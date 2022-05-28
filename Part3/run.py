@@ -6,9 +6,13 @@ from neurodynex.hopfield_network import network, pattern_tools
 # ----- Helper functions ----- #
 
 
-def create_random_patterns_between_0_and_1(N, a, n_patterns):
+def create_random_patterns(N, a, n_patterns):
     pattern_generator = pattern_tools.PatternFactory(N, pattern_width=1)
     patterns = pattern_generator.create_random_pattern_list(n_patterns, on_probability=a)
+    return patterns
+
+
+def convert_patterns_to_0_and_1(patterns):
     return [(pattern + 1) / 2 for pattern in patterns]
 
 
@@ -19,9 +23,9 @@ def generate_weight_matrix(patterns, a, K, n_exc, n_inh):
     for pattern in patterns:
         # Set weights exc -> exc
         weights[:n_exc, :n_exc] += (1/n_exc) * np.outer(pattern[:n_exc], pattern[:n_exc])
-        # Set weights exc -> inh
-        weights[n_exc:, :n_exc] += (a/n_inh) * pattern[n_exc:]
-    # Set weights inh -> exc
+        # Set weights inh -> exc
+        weights[n_exc:, :n_exc] += - (a/n_inh) * pattern[n_exc:]
+    # Set weights exc -> inh
     for i in range(n_inh):
         tmp = np.zeros(n_exc)
         random_exc_neurons = np.random.choice(np.arange(n_exc), size=K)
@@ -75,7 +79,8 @@ def compute_distances(net, patterns, n_runs, distance_function, percentage=0.15)
     n_flips = int(net.nrOfNeurons * percentage)
     for i, pattern in enumerate(patterns):
         initial_state = pattern_tools.flip_n(pattern, n_flips)
-        net.set_state_from_pattern(initial_state)
+        initial_state_0_and_1 = convert_patterns_to_0_and_1([initial_state])[0]
+        net.set_state_from_pattern(initial_state_0_and_1)
         net.run(n_runs)
         final_state = net.state
         distances[i] = distance_function(final_state, np.squeeze(pattern))
@@ -102,7 +107,7 @@ def compute_m_max(m_vals, distances, tol_distance=0.05, tol_error_percentage=0.0
 # ----- Exercises code ----- #
 
 
-def ex3(n_patterns, a):
+def ex3(n_patterns, a, sync=None):
 
     n_exc = 300  # Excitatory population of size 300
     n_inh = 80  # Inhibitory population of size 80
@@ -113,22 +118,29 @@ def ex3(n_patterns, a):
     # Create network with excitatory + inhibitory neurons
     net = network.HopfieldNetwork(N)
     # Generate random patterns, map {-1, 1} to {0, 1}
-    patterns = create_random_patterns_between_0_and_1(N, a, n_patterns)
+    patterns = create_random_patterns(N, a, n_patterns)
+    patterns_0_and_1 = convert_patterns_to_0_and_1(patterns)
     # Generate weight matrix
-    weights = generate_weight_matrix(patterns, a, K, n_exc, n_inh)
+    weights = generate_weight_matrix(patterns_0_and_1, a, K, n_exc, n_inh)
     # Save matrix to network
     net.weights = weights
     # Create dynamics function
     update_dynamics = get_update_function(n_exc)
+    # Set update sync
+    if sync == True:
+        net.set_dynamics_sign_sync()
+    elif sync == False:
+        net.set_dynamics_sign_async()
+    # Else, leave default, whatever it is
     # Set dynamics function to network
     net.set_dynamics_to_user_function(update_dynamics)
 
-    return net, patterns
+    return net, patterns  # Careful, patterns returned here are between -1 and 1!
 
 
-def ex4(n_steps, n_trials):
+def ex4(n_steps, n_trials, sync=None, ex_number="4"):
     a = 0.1
-    dict_sizes = range(1, 6, 1)
+    dict_sizes = range(1, 10, 1)
     all_percentages = []
     all_capacities = []
     distance_function = compute_hamming_distance
@@ -136,8 +148,8 @@ def ex4(n_steps, n_trials):
     for i in range(n_trials):
         distances = []
         for n_patterns in dict_sizes:
-            net, patterns = ex3(n_patterns, a)
-            dist = compute_distances(net, patterns, n_steps, distance_function, percentage=0)
+            net, patterns = ex3(n_patterns, a, sync=sync)
+            dist = compute_distances(net, patterns, n_steps, distance_function, percentage=0.05)  # c = 5% when not specified
             distances.append(dist)
         capacity, correctly_retrieved_percentage = compute_m_max(dict_sizes, distances, tol_distance=0.1)
         all_percentages.append(correctly_retrieved_percentage)
@@ -147,16 +159,24 @@ def ex4(n_steps, n_trials):
     std_of_percentages = np.std(all_percentages, axis=0)
 
     plt.errorbar(dict_sizes, mean_of_percentages, yerr=std_of_percentages)
-    plt.title("Ex4: Means of percentage of correctly retrieved patterns with errorbars.")
+    plt.title("Ex{}: Means of percentage of correctly retrieved patterns with errorbars.".format(ex_number))
     plt.xlabel("Number of patterns stored in the network")
     plt.ylabel("Percentage of correctly retrieved patterns")
-    plt.savefig("plots/ex4.png")
+    plt.savefig("plots/ex{}.png".format(ex_number))
     plt.show()
 
     return np.mean(all_capacities)
+
+
+def ex5(n_steps, n_runs):
+    sync = [False, True]
+    for s in sync:
+        suffix = "sync" if s else "async"
+        ex4(n_steps, n_runs, sync=s, ex_number="5_{}".format(suffix))
 
 
 if __name__ == "__main__":
     print("Exercise 4 (and 3) results:")
     mean_capacity = ex4(6, 6)
     print("Mean m_max value of the network for sparseness a = 0.1:", mean_capacity)
+    ex5(6, 6)

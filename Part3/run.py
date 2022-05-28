@@ -54,6 +54,19 @@ def get_update_function(n_exc):
     return update_dynamics
 
 
+def get_update_function_2_pop(n_exc, n_inh1, a):
+    def update_dynamics(sigma_t0, w):
+        # Update each excitatory neuron according to equation (6)
+        sigma_t1_exc = 0.5 * (1 + np.sign(np.dot(w[:, :n_exc].T, sigma_t0)))
+        sigma_t1_exc = np.where(sigma_t1_exc == 0.5, 0, sigma_t1_exc)  # Set inconsistent states to 0
+        # Update each inhibitory neuron of inhibitory population 1 according to equation (10)
+        h = np.sum(np.dot(w[:n_exc, :n_exc], w[:n_exc, n_exc:]), axis=0)
+        sigma_t1_inh = (np.random.random(size=h[:n_inh1].shape) < h[:n_inh1]).astype(int)
+        sigma_t2_inh = (np.random.random(size=h[n_inh1:].shape) < h[n_inh1:]).astype(int) if np.sum(sigma_t0[:n_exc]) > a*len(sigma_t0[:n_exc]) else np.zeros(h[n_inh1:].shape)
+        return np.concatenate((sigma_t1_exc, sigma_t1_inh, sigma_t2_inh))
+    return update_dynamics
+
+
 def compute_hamming_distance(pattern1, pattern2):
     """
     Computes the hamming distance between two patterns.
@@ -198,8 +211,63 @@ def ex5(n_steps, n_runs):
     plt.show()
 
 
+def ex6(n_trials, n_steps):
+    n_exc = 300
+    n_inh1 = 80
+    n_inh2 = 80
+    n_inh = n_inh1 + n_inh2
+    N = n_exc + n_inh
+    a = 0.1
+    K = 60
+
+    def init_network(n_patterns):
+        # Create network with excitatory + inhibitory neurons
+        net = network.HopfieldNetwork(N)
+        # Generate random patterns, map {-1, 1} to {0, 1}
+        patterns = create_random_patterns(n_exc, n_inh, a, n_patterns)
+        patterns_0_and_1 = convert_patterns_to_0_and_1(patterns)
+        # Generate weight matrix
+        weights = generate_weight_matrix(patterns_0_and_1, a, K, n_exc, n_inh)
+        # Save matrix to network
+        net.weights = weights
+        # Create dynamics function
+        update_dynamics = get_update_function_2_pop(n_exc, n_inh1, a)
+        # Set dynamics function to network
+        net.set_dynamics_to_user_function(update_dynamics)
+
+        return net, patterns  # Careful, patterns returned here are between -1 and 1!
+
+    # Run experience again
+    dict_sizes = range(1, 10, 1)
+    all_percentages = []
+    all_capacities = []
+    distance_function = compute_hamming_distance
+
+    for i in range(n_trials):
+        distances = []
+        for n_patterns in dict_sizes:
+            net, patterns = init_network(n_patterns)
+            dist = compute_distances(net, patterns, n_steps, distance_function, n_exc,
+                                     percentage=0.05)  # c = 5% when not specified
+            distances.append(dist)
+        capacity, correctly_retrieved_percentage = compute_m_max(dict_sizes, distances, tol_distance=0.1)
+        all_percentages.append(correctly_retrieved_percentage)
+        all_capacities.append(capacity)
+
+    mean_of_percentages = np.mean(all_percentages, axis=0)
+    std_of_percentages = np.std(all_percentages, axis=0)
+
+    plt.errorbar(dict_sizes, mean_of_percentages, yerr=std_of_percentages)
+    plt.title("Ex6: Means of percentage of correctly retrieved patterns with errorbars.")
+    plt.xlabel("Number of patterns stored in the network")
+    plt.ylabel("Percentage of correctly retrieved patterns")
+    plt.savefig("plots/ex6.png")
+    plt.show()
+
+
 if __name__ == "__main__":
     print("Exercise 4 (and 3) results:")
     #mean_capacity = ex4(10, 15)
     #print("Mean m_max value of the network for sparseness a = 0.1:", mean_capacity)
     #ex5(15, 15)
+    ex6(10, 15)

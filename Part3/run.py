@@ -48,7 +48,6 @@ def get_update_function(n_exc):
 def compute_hamming_distance(pattern1, pattern2):
     """
     Computes the hamming distance between two patterns.
-    Hamming distance is defined in our case as (N - dot(pattern1, pattern2)) / 2N, where N is the number of neurons.
     Shapes of the patterns must match, otherwise an exception is raised.
     :param pattern1: First pattern
     :param pattern2: Second pattern
@@ -58,7 +57,7 @@ def compute_hamming_distance(pattern1, pattern2):
     assert pattern1.shape == pattern2.shape, "Shapes of the patterns do not match!"
 
     N = np.prod(pattern1.shape)
-    return (N - np.dot(pattern1.flatten(), pattern2.flatten())) / (2*N)
+    return (np.sum(pattern1) + np.sum(pattern2) - 2*np.dot(pattern1.flatten(), pattern2.flatten())) / N
 
 
 def compute_distances(net, patterns, n_runs, distance_function, percentage=0.15):
@@ -129,7 +128,7 @@ def ex3(n_patterns, a):
 
 def ex4(n_steps, n_trials):
     a = 0.1
-    dict_sizes = range(1, 10, 2)
+    dict_sizes = range(1, 6, 1)
     all_percentages = []
     all_capacities = []
     distance_function = compute_hamming_distance
